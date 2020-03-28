@@ -52,41 +52,38 @@ const questions = [
   }
 ];
 
-figlet("Hamidreza", function(err, data) {
+figlet("Hamidreza", async function(err, data) {
   if (err) {
     console.log("Something went wrong...");
     console.dir(err);
     return;
   }
   console.log(chalk.green(data));
-  (async function() {
-    try {
-      const { name, count, quality } = await input.prompt(questions);
-      spinner.start();
-      const imagesData = await axios.default.get(getUrl(name));
-      if (imagesData.data.total > 0) {
-        const items = imagesData.data.results.splice(0, count);
-        const urls = [];
-        !fs.existsSync("./photos") ? fs.mkdirSync("./photos") : null;
-        items.forEach((img, index) => {
-          urls.push(
-            download.call(
-              this,
-              img.urls[quality],
-              getFileName(name, quality, index + 1)
-            )
-          );
-        });
-        await Promise.all([...urls]);
-        spinner.stop();
-        clear();
-        console.log(chalk.green("All Pictures Downloaded!"));
-      } else {
-        throw new Error("image not found!");
-      }
-    } catch (error) {
-      spinner.stop();
-      console.log("\n", chalk.redBright(error));
+  async function downloadImage() {
+    if (!fs.existsSync("./photos")) {
+      fs.mkdirSync("./photos");
     }
-  })();
+    const { name, quality, count } = await input.prompt(questions);
+    const res = await axios.default.get(getUrl(name));
+
+    if (!res.data.total) {
+      throw new Error("image not found");
+    }
+    return Promise.all(
+      res.data.results
+        .splice(count)
+        .map((img, index) =>
+          download(img.urls[quality], getFileName(name, quality, index))
+        )
+    );
+  }
+
+  try {
+    await downloadImage();
+    clear();
+    console.log(chalk.green('all images downloaded!'));
+  } catch (error) {
+    console.log(chalk.red(error));
+  }
 });
+
