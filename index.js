@@ -59,11 +59,14 @@ figlet("Hamidreza", async function(err, data) {
     return;
   }
   console.log(chalk.green(data));
+
   async function downloadImage() {
     if (!fs.existsSync("./photos")) {
       fs.mkdirSync("./photos");
     }
+
     const { name, quality, count } = await input.prompt(questions);
+    spinner.start();
     const res = await axios.default.get(getUrl(name));
 
     if (!res.data.total) {
@@ -81,9 +84,10 @@ figlet("Hamidreza", async function(err, data) {
   try {
     await downloadImage();
     clear();
-    console.log(chalk.green('all images downloaded!'));
+    console.log(chalk.green("all images downloaded!"));
   } catch (error) {
     console.log(chalk.red(error));
+  } finally {
+    spinner.stop();
   }
 });
-
